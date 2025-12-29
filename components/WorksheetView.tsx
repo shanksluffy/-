@@ -42,12 +42,12 @@ const WorksheetView: React.FC<WorksheetViewProps> = ({ problems, onBack }) => {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
           {problems.map((p, idx) => (
-            <div key={p.id} className="flex items-center text-xl font-bold text-slate-700 border-b-2 border-slate-50 pb-2">
-              <span className="w-10 text-sm text-slate-300 font-medium">{idx + 1}.</span>
-              <span className="flex-1 tracking-tight">{p.expression} = </span>
-              <span className={`w-32 border-b-2 border-slate-200 ml-4 min-h-[1.5rem] flex items-end justify-center ${showAnswers ? 'text-indigo-400' : 'text-transparent'}`}>
+            <div key={p.id} className="flex items-center text-lg font-bold text-slate-700 border-b-2 border-slate-50 pb-2 whitespace-nowrap">
+              <span className="flex-shrink-0 w-8 text-sm text-slate-300 font-medium">{idx + 1}.</span>
+              <span className="flex-shrink-0">{p.expression} = </span>
+              <span className={`flex-grow border-b-2 border-slate-200 ml-2 min-h-[1.5rem] flex items-end justify-center ${showAnswers ? 'text-indigo-400 font-black' : 'text-transparent'}`}>
                 {p.correctAnswer}
               </span>
             </div>
@@ -59,7 +59,7 @@ const WorksheetView: React.FC<WorksheetViewProps> = ({ problems, onBack }) => {
             <h3 className="text-sm font-black text-slate-400 mb-6 uppercase tracking-widest">标准答案参考</h3>
             <div className="grid grid-cols-5 gap-6 text-xs font-bold text-slate-500">
               {problems.map((p, idx) => (
-                <div key={p.id} className="flex gap-2">
+                <div key={p.id} className="flex gap-2 whitespace-nowrap">
                   <span className="text-slate-300">{idx + 1}.</span>
                   <span>{p.correctAnswer}</span>
                 </div>
