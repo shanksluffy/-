@@ -16,9 +16,15 @@ export const getOperatorSymbol = (op: Operator): string => {
   }
 };
 
-const evaluateExpression = (numbers: number[], operators: Operator[]): number => {
+/**
+ * Evaluates the expression while checking for intermediate negative values.
+ * Returns both the final result and whether a negative value was encountered 
+ * during the Addition/Subtraction phase (most relevant for elementary math).
+ */
+const evaluateExpressionExtended = (numbers: number[], operators: Operator[]): { result: number, hasNegativeIntermediate: boolean } => {
   let currentNumbers = [...numbers];
   let currentOps = [...operators];
+  let hasNegativeIntermediate = false;
 
   // Pass 1: Multiplication and Division (MD)
   for (let i = 0; i < currentOps.length; i++) {
@@ -37,20 +43,33 @@ const evaluateExpression = (numbers: number[], operators: Operator[]): number =>
   }
 
   // Pass 2: Addition and Subtraction (AS)
+  // These are evaluated left-to-right
   let result = currentNumbers[0];
+  if (result < 0) hasNegativeIntermediate = true;
+
   for (let i = 0; i < currentOps.length; i++) {
     const op = currentOps[i];
     const n2 = currentNumbers[i + 1];
-    if (op === 'addition') result += n2;
-    else if (op === 'subtraction') result -= n2;
+    if (op === 'addition') {
+      result += n2;
+    } else if (op === 'subtraction') {
+      result -= n2;
+    }
+    
+    if (result < 0) {
+      hasNegativeIntermediate = true;
+    }
   }
 
-  return Math.round(result * 100) / 100;
+  return { 
+    result: Math.round(result * 100) / 100, 
+    hasNegativeIntermediate 
+  };
 };
 
 const generateSingleProblem = (config: QuizConfig): MathProblem => {
   let attempts = 0;
-  while (attempts < 100) {
+  while (attempts < 200) {
     attempts++;
     const numbers: number[] = [];
     const ops: Operator[] = [];
@@ -75,7 +94,16 @@ const generateSingleProblem = (config: QuizConfig): MathProblem => {
       }
     }
 
-    // Division handling: adjust for integer results if needed
+    // For the most common 2-operand subtraction case, fix it immediately by swapping
+    if (!config.allowNegative && count === 2 && ops[0] === 'subtraction') {
+      if (numbers[0] < numbers[1]) {
+        const temp = numbers[0];
+        numbers[0] = numbers[1];
+        numbers[1] = temp;
+      }
+    }
+
+    // Division handling: adjust for integer results
     if (config.integerDivisionOnly) {
       for (let i = 0; i < ops.length; i++) {
         if (ops[i] === 'division') {
@@ -86,10 +114,11 @@ const generateSingleProblem = (config: QuizConfig): MathProblem => {
       }
     }
 
-    const correctAnswer = evaluateExpression(numbers, ops);
+    const { result, hasNegativeIntermediate } = evaluateExpressionExtended(numbers, ops);
 
-    if (!config.allowNegative && correctAnswer < 0) continue;
-    if (config.integerDivisionOnly && !Number.isInteger(correctAnswer)) continue;
+    // Apply constraints
+    if (!config.allowNegative && (result < 0 || hasNegativeIntermediate)) continue;
+    if (config.integerDivisionOnly && !Number.isInteger(result)) continue;
     
     let expression = "";
     for (let i = 0; i < numbers.length; i++) {
@@ -102,7 +131,7 @@ const generateSingleProblem = (config: QuizConfig): MathProblem => {
     return {
       id: Math.random().toString(36).substr(2, 9),
       expression,
-      correctAnswer,
+      correctAnswer: result,
       userAnswer: '',
       isCorrect: null,
       timestamp: Date.now()
@@ -116,7 +145,7 @@ export const generateProblemSet = (config: QuizConfig): MathProblem[] => {
   const problems: MathProblem[] = [];
   const seen = new Set<string>();
   let attempts = 0;
-  const maxAttempts = config.quantity * 30;
+  const maxAttempts = config.quantity * 50;
 
   while (problems.length < config.quantity && attempts < maxAttempts) {
     const problem = generateSingleProblem(config);
